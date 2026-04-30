@@ -396,99 +396,25 @@ export function createApp(bindings = {}) {
         }
     });
 
-    // Subconverter-compatible adapter for tools like cfnew
-    app.get('/sub', async (c) => {
-        try {
-            const url = c.req.query('url');
-            if (!url) {
-                return c.text('Missing url parameter', 400);
-            }
+    // Subconverter-compatible adapter: translate legacy ?target=X&url=Y to native /X?config=Y
+    app.get('/sub', (c) => {
+        const target = c.req.query('target') || 'clash';
+        const url = c.req.query('url');
+        if (!url) return c.text('Missing url parameter', 400);
 
-            const target = c.req.query('target') || 'clash';
+        const targetMap = { clash: '/clash', singbox: '/singbox', surge: '/surge' };
+        const path = targetMap[target.toLowerCase()] || '/clash';
 
-            // URL-decode the subscription URL (cfnew passes it encoded)
-            let decodedUrl = url;
-            try {
-                decodedUrl = decodeURIComponent(url);
-            } catch {
-                // Keep original if decode fails
-            }
+        let decodedUrl = url;
+        try { decodedUrl = decodeURIComponent(url); } catch {}
 
-            const selectedRules = parseSelectedRules(c.req.query('selectedRules') || 'balanced');
-            const customRules = parseJsonArray(c.req.query('customRules'));
-            const ua = c.req.query('ua') || getRequestHeader(c.req, 'User-Agent') || DEFAULT_USER_AGENT;
-            const groupByCountry = parseBooleanFlag(c.req.query('group_by_country'));
-            const includeAutoSelect = c.req.query('include_auto_select') !== 'false';
-            const lang = c.get('lang');
+        const redirectUrl = new URL(c.req.url);
+        redirectUrl.pathname = path;
+        redirectUrl.search = '';
+        redirectUrl.searchParams.set('config', decodedUrl);
+        redirectUrl.searchParams.set('selectedRules', 'balanced');
 
-            switch (target) {
-                case 'clash': {
-                    const enableClashUI = parseBooleanFlag(c.req.query('enable_clash_ui'));
-                    const externalController = c.req.query('external_controller');
-                    const externalUiDownloadUrl = c.req.query('external_ui_download_url');
-
-                    const builder = new ClashConfigBuilder(
-                        decodedUrl, selectedRules, customRules, null,
-                        lang, ua, groupByCountry, enableClashUI,
-                        externalController, externalUiDownloadUrl, includeAutoSelect
-                    );
-                    await builder.build();
-                    const userinfo = builder.getSubscriptionUserinfo();
-                    const headers = { 'Content-Type': 'text/yaml; charset=utf-8' };
-                    if (userinfo) headers['subscription-userinfo'] = userinfo;
-                    return c.text(builder.formatConfig(), 200, headers);
-                }
-                case 'singbox': {
-                    const requestedVersion = c.req.query('singbox_version') || c.req.query('sb_version') || c.req.query('sb_ver');
-                    const requestUA = getRequestHeader(c.req, 'User-Agent');
-                    const version = resolveSingboxConfigVersion(requestedVersion, requestUA);
-                    const baseConfig = version === '1.11' ? SING_BOX_CONFIG_V1_11 : SING_BOX_CONFIG;
-                    const enableClashUI = parseBooleanFlag(c.req.query('enable_clash_ui'));
-                    const externalController = c.req.query('external_controller');
-                    const externalUiDownloadUrl = c.req.query('external_ui_download_url');
-
-                    const builder = new SingboxConfigBuilder(
-                        decodedUrl, selectedRules, customRules, baseConfig,
-                        lang, ua, groupByCountry, enableClashUI,
-                        externalController, externalUiDownloadUrl, version, includeAutoSelect
-                    );
-                    await builder.build();
-                    const userinfo = builder.getSubscriptionUserinfo();
-                    if (userinfo) c.header('subscription-userinfo', userinfo);
-                    return c.json(builder.config);
-                }
-                case 'surge': {
-                    const builder = new SurgeConfigBuilder(
-                        decodedUrl, selectedRules, customRules, null,
-                        lang, ua, groupByCountry, includeAutoSelect
-                    );
-                    builder.setSubscriptionUrl(c.req.url);
-                    await builder.build();
-                    const userinfo = builder.getSubscriptionUserinfo();
-                    if (userinfo) c.header('subscription-userinfo', userinfo);
-                    return c.text(builder.formatConfig());
-                }
-                case 'v2ray': {
-                    const response = await fetch(decodedUrl, {
-                        method: 'GET',
-                        headers: { 'User-Agent': ua }
-                    });
-                    const text = await response.text();
-                    let processed = tryDecodeSubscriptionLines(text, { decodeUriComponent: true });
-                    if (!Array.isArray(processed)) processed = [processed];
-                    const finalString = processed.filter(item => typeof item === 'string' && item.trim()).join('\n');
-
-                    const respHeaders = {};
-                    const userinfo = response.headers.get('subscription-userinfo');
-                    if (userinfo) respHeaders['subscription-userinfo'] = userinfo;
-                    return c.text(encodeBase64(finalString), 200, respHeaders);
-                }
-                default:
-                    return c.text(`Unsupported target: ${target}. Supported: clash, singbox, surge, v2ray`, 400);
-            }
-        } catch (error) {
-            return handleError(c, error, runtime.logger);
-        }
+        return c.redirect(redirectUrl.toString(), 302);
     });
 
     app.get('/favicon.ico', async (c) => {
