@@ -12,8 +12,26 @@ function getApp(env) {
 }
 
 export default {
-    fetch(request, env, ctx) {
+    async fetch(request, env, ctx) {
+        if (request.method === 'OPTIONS') {
+            return new Response(null, {
+                status: 204,
+                headers: {
+                    'Access-Control-Allow-Origin': '*',
+                    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+                    'Access-Control-Allow-Headers': '*',
+                    'Access-Control-Max-Age': '86400',
+                }
+            });
+        }
         const app = getApp(env);
-        return app.fetch(request, env, ctx);
+        const response = await app.fetch(request, env, ctx);
+        const newHeaders = new Headers(response.headers);
+        newHeaders.set('Access-Control-Allow-Origin', '*');
+        return new Response(response.body, {
+            status: response.status,
+            statusText: response.statusText,
+            headers: newHeaders
+        });
     }
 };
