@@ -429,8 +429,9 @@ export function createApp(bindings = {}) {
             const items = Array.isArray(parsed) ? parsed : (parsed?.proxies || []);
             for (const item of items.slice(0, 3)) {
                 if (typeof item === 'string') {
-                    debug.push(`  full item length: ${item.length}`);
-                    debug.push(`  last 30 chars: ...${item.slice(-30)}`);
+                    const hashIdx = item.indexOf('#');
+                    debug.push(`  full length: ${item.length}, firstHash: ${hashIdx}`);
+                    debug.push(`  after hash (50 chars): ${hashIdx >= 0 ? item.substring(hashIdx, hashIdx + 50) : 'NO HASH'}`);
                     const urlParams = parseUrlParams(item);
                     debug.push(`  parseUrlParams name: "${urlParams.name}"`);
                     const proxy = await ProxyParser.parse(item, ua);
