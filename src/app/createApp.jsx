@@ -10,10 +10,7 @@ import { SingboxConfigBuilder } from '../builders/SingboxConfigBuilder.js';
 import { ClashConfigBuilder } from '../builders/ClashConfigBuilder.js';
 import { SurgeConfigBuilder } from '../builders/SurgeConfigBuilder.js';
 import { createTranslator, resolveLanguage } from '../i18n/index.js';
-import { encodeBase64, tryDecodeSubscriptionLines, parseUrlParams } from '../utils.js';
-import { fetchSubscriptionWithFormat } from '../parsers/subscription/httpSubscriptionFetcher.js';
-import { parseSubscriptionContent } from '../parsers/subscription/subscriptionContentParser.js';
-import { ProxyParser } from '../parsers/ProxyParser.js';
+import { encodeBase64, tryDecodeSubscriptionLines } from '../utils.js';
 import { APP_NAME, APP_SUBTITLE } from '../constants.js';
 import { ShortLinkService } from '../services/shortLinkService.js';
 import { ConfigStorageService } from '../services/configStorageService.js';
@@ -396,67 +393,6 @@ export function createApp(bindings = {}) {
             return c.json({ originalUrl });
         } catch (error) {
             return handleError(c, error, runtime.logger);
-        }
-    });
-
-    // --- DEBUG: /debug-sub?url=<encoded_subscription_url> ---
-    app.get('/debug-sub', async (c) => {
-        try {
-            const encodedUrl = c.req.query('url');
-            if (!encodedUrl) return c.text('Missing url parameter', 400);
-
-            let targetUrl = encodedUrl;
-            try { targetUrl = decodeURIComponent(encodedUrl); } catch {}
-
-            const ua = c.req.query('ua') || DEFAULT_USER_AGENT;
-            const debug = [];
-
-            debug.push(`=== Fetching: ${targetUrl} ===`);
-
-            const fetchResult = await fetchSubscriptionWithFormat(targetUrl, ua);
-            if (!fetchResult) {
-                debug.push('FAIL: fetchSubscriptionWithFormat returned null');
-                return c.text(debug.join('\n'));
-            }
-
-            debug.push(`format: ${fetchResult.format}`);
-            debug.push(`content (first 500 chars): ${fetchResult.content.substring(0, 500)}`);
-
-            const parsed = parseSubscriptionContent(fetchResult.content);
-            debug.push(`parseSubscriptionContent type: ${Array.isArray(parsed) ? 'array[' + parsed.length + ']' : typeof parsed}`);
-
-            let proxyCount = 0;
-            const items = Array.isArray(parsed) ? parsed : (parsed?.proxies || []);
-            for (const item of items.slice(0, 3)) {
-                if (typeof item === 'string') {
-                    const hashIdx = item.indexOf('#');
-                    debug.push(`  full length: ${item.length}, firstHash: ${hashIdx}`);
-                    // What's actually in the raw URI after the first ?
-                    const firstQIdx = item.indexOf('?');
-                    const rawParams = item.substring(firstQIdx + 1);
-                    debug.push(`  raw params: length=${rawParams.length}, has #: ${rawParams.includes('#')}`);
-                    debug.push(`  raw params last 50: ...${rawParams.slice(-50)}`);
-                    // Now the parseUrlParams issue
-                    const [, rest2] = item.split('://');
-                    debug.push(`  rest length: ${rest2.length}, rem2 parts: ${rest2.split('?').length}`);
-                    // Print FULL last part (not truncated)
-                    const allParts = rest2.split('?');
-                    debug.push(`  last part (full): ...${allParts[allParts.length - 1].slice(-60)}`);
-                    const urlParams = parseUrlParams(item);
-                    debug.push(`  parseUrlParams name: "${urlParams.name}"`);
-                    const proxy = await ProxyParser.parse(item, ua);
-                    debug.push(`  parsed: ${proxy ? JSON.stringify({ type: proxy.type, tag: proxy.tag, server: proxy.server }) : 'null/undefined'}`);
-                    if (proxy) proxyCount++;
-                } else if (item?.tag) {
-                    debug.push(`  proxy object: ${item.tag} (${item.type})`);
-                    proxyCount++;
-                }
-            }
-            debug.push(`\nTotal items: ${items.length}, proxies parsed: ${proxyCount}`);
-
-            return c.text(debug.join('\n'));
-        } catch (error) {
-            return c.text('DEBUG ERROR: ' + error.message + '\n' + error.stack);
         }
     });
 
