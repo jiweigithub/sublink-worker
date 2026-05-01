@@ -10,7 +10,7 @@ import { SingboxConfigBuilder } from '../builders/SingboxConfigBuilder.js';
 import { ClashConfigBuilder } from '../builders/ClashConfigBuilder.js';
 import { SurgeConfigBuilder } from '../builders/SurgeConfigBuilder.js';
 import { createTranslator, resolveLanguage } from '../i18n/index.js';
-import { encodeBase64, tryDecodeSubscriptionLines } from '../utils.js';
+import { encodeBase64, tryDecodeSubscriptionLines, parseUrlParams } from '../utils.js';
 import { fetchSubscriptionWithFormat } from '../parsers/subscription/httpSubscriptionFetcher.js';
 import { parseSubscriptionContent } from '../parsers/subscription/subscriptionContentParser.js';
 import { ProxyParser } from '../parsers/ProxyParser.js';
@@ -427,9 +427,12 @@ export function createApp(bindings = {}) {
 
             let proxyCount = 0;
             const items = Array.isArray(parsed) ? parsed : (parsed?.proxies || []);
-            for (const item of items.slice(0, 5)) {
+            for (const item of items.slice(0, 3)) {
                 if (typeof item === 'string') {
-                    debug.push(`  item: ${item.substring(0, 120)}`);
+                    debug.push(`  full item length: ${item.length}`);
+                    debug.push(`  last 30 chars: ...${item.slice(-30)}`);
+                    const urlParams = parseUrlParams(item);
+                    debug.push(`  parseUrlParams name: "${urlParams.name}"`);
                     const proxy = await ProxyParser.parse(item, ua);
                     debug.push(`  parsed: ${proxy ? JSON.stringify({ type: proxy.type, tag: proxy.tag, server: proxy.server }) : 'null/undefined'}`);
                     if (proxy) proxyCount++;
