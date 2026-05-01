@@ -396,6 +396,11 @@ export function createApp(bindings = {}) {
         }
     });
 
+    // Compatibility endpoint for edgetunnel admin panel verification
+    app.get('/version', (c) => {
+        return c.text('subconverter v2.1.0-compatible');
+    });
+
     // Subconverter-compatible adapter: translate legacy ?target=X&url=Y to native /X?config=Y
     app.get('/sub', (c) => {
         const target = c.req.query('target') || 'clash';
