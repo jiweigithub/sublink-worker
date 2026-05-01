@@ -431,7 +431,10 @@ export function createApp(bindings = {}) {
                 if (typeof item === 'string') {
                     const hashIdx = item.indexOf('#');
                     debug.push(`  full length: ${item.length}, firstHash: ${hashIdx}`);
-                    debug.push(`  after hash (50 chars): ${hashIdx >= 0 ? item.substring(hashIdx, hashIdx + 50) : 'NO HASH'}`);
+                    // Raw split test
+                    const manualSplit = item.split('#');
+                    debug.push(`  split('#') parts: ${manualSplit.length}`);
+                    if (manualSplit.length > 1) debug.push(`  manual name: "${manualSplit[1].substring(0, 50)}"`);
                     const urlParams = parseUrlParams(item);
                     debug.push(`  parseUrlParams name: "${urlParams.name}"`);
                     const proxy = await ProxyParser.parse(item, ua);
