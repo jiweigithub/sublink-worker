@@ -431,18 +431,17 @@ export function createApp(bindings = {}) {
                 if (typeof item === 'string') {
                     const hashIdx = item.indexOf('#');
                     debug.push(`  full length: ${item.length}, firstHash: ${hashIdx}`);
-                    // Trace parseUrlParams internals
+                    // What's actually in the raw URI after the first ?
+                    const firstQIdx = item.indexOf('?');
+                    const rawParams = item.substring(firstQIdx + 1);
+                    debug.push(`  raw params: length=${rawParams.length}, has #: ${rawParams.includes('#')}`);
+                    debug.push(`  raw params last 50: ...${rawParams.slice(-50)}`);
+                    // Now the parseUrlParams issue
                     const [, rest2] = item.split('://');
-                    const qCount = (rest2.match(/\?/g) || []).length;
-                    debug.push(`  ? count in rest: ${qCount}`);
-                    const [addr2, ...rem2] = rest2.split('?');
-                    debug.push(`  split('?') parts: ${rem2.length + 1}, addr2 length: ${addr2.length}`);
-                    for (let i = 0; i < rem2.length; i++) {
-                        debug.push(`    part[${i + 1}]: ${rem2[i].substring(0, 80)}`);
-                        if (rem2[i].includes('#')) debug.push(`      *** HAS # ***`);
-                    }
-                    const pp = rem2.join('?');
-                    debug.push(`  paramsPart length: ${pp.length}, hash at: ${pp.indexOf('#')}`);
+                    debug.push(`  rest length: ${rest2.length}, rem2 parts: ${rest2.split('?').length}`);
+                    // Print FULL last part (not truncated)
+                    const allParts = rest2.split('?');
+                    debug.push(`  last part (full): ...${allParts[allParts.length - 1].slice(-60)}`);
                     const urlParams = parseUrlParams(item);
                     debug.push(`  parseUrlParams name: "${urlParams.name}"`);
                     const proxy = await ProxyParser.parse(item, ua);
