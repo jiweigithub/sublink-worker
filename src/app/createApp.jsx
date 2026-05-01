@@ -431,10 +431,15 @@ export function createApp(bindings = {}) {
                 if (typeof item === 'string') {
                     const hashIdx = item.indexOf('#');
                     debug.push(`  full length: ${item.length}, firstHash: ${hashIdx}`);
-                    // Raw split test
-                    const manualSplit = item.split('#');
-                    debug.push(`  split('#') parts: ${manualSplit.length}`);
-                    if (manualSplit.length > 1) debug.push(`  manual name: "${manualSplit[1].substring(0, 50)}"`);
+                    // Trace parseUrlParams internals
+                    const [, rest2] = item.split('://');
+                    const [addr2, ...rem2] = rest2.split('?');
+                    debug.push(`  split('?') parts: ${rem2.length + 1}`);
+                    const pp = rem2.join('?');
+                    const ppHashIdx = pp.indexOf('#');
+                    debug.push(`  paramsPart length: ${pp.length}, hash at: ${ppHashIdx}`);
+                    const [po2, ...fp2] = pp.split('#');
+                    debug.push(`  fragmentParts: ${fp2.length > 0 ? '"' + fp2[0].substring(0, 50) + '"' : 'EMPTY'}`);
                     const urlParams = parseUrlParams(item);
                     debug.push(`  parseUrlParams name: "${urlParams.name}"`);
                     const proxy = await ProxyParser.parse(item, ua);
