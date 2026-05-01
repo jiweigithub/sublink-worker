@@ -433,13 +433,16 @@ export function createApp(bindings = {}) {
                     debug.push(`  full length: ${item.length}, firstHash: ${hashIdx}`);
                     // Trace parseUrlParams internals
                     const [, rest2] = item.split('://');
+                    const qCount = (rest2.match(/\?/g) || []).length;
+                    debug.push(`  ? count in rest: ${qCount}`);
                     const [addr2, ...rem2] = rest2.split('?');
-                    debug.push(`  split('?') parts: ${rem2.length + 1}`);
+                    debug.push(`  split('?') parts: ${rem2.length + 1}, addr2 length: ${addr2.length}`);
+                    for (let i = 0; i < rem2.length; i++) {
+                        debug.push(`    part[${i + 1}]: ${rem2[i].substring(0, 80)}`);
+                        if (rem2[i].includes('#')) debug.push(`      *** HAS # ***`);
+                    }
                     const pp = rem2.join('?');
-                    const ppHashIdx = pp.indexOf('#');
-                    debug.push(`  paramsPart length: ${pp.length}, hash at: ${ppHashIdx}`);
-                    const [po2, ...fp2] = pp.split('#');
-                    debug.push(`  fragmentParts: ${fp2.length > 0 ? '"' + fp2[0].substring(0, 50) + '"' : 'EMPTY'}`);
+                    debug.push(`  paramsPart length: ${pp.length}, hash at: ${pp.indexOf('#')}`);
                     const urlParams = parseUrlParams(item);
                     debug.push(`  parseUrlParams name: "${urlParams.name}"`);
                     const proxy = await ProxyParser.parse(item, ua);
