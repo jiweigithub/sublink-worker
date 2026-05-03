@@ -3,10 +3,11 @@ name: Release
 on:
   push:
     tags:
-      - "v*.*.*" # Trigger on version tags like v2.0.1
+      - "v*.*.*"
 
 permissions:
-  contents: write # Required to create releases
+  contents: write
+  actions: write
 
 jobs:
   release:
