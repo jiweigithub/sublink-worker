@@ -5,5 +5,5 @@ compatibility_date = "2025-03-01"
 compatibility_flags = ["nodejs_compat"]
 
 kv_namespaces = [
-  { binding = "SUBLINK_KV", id = "YOUR_KV_NAMESPACE_ID" }
+  { binding = "SUBLINK_KV", id = "dfb74cdbe077456dbd8f8225c0f5c599" }
 ]
