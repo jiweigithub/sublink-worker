@@ -422,16 +422,9 @@ export function createApp(bindings = {}) {
         return c.redirect(redirectUrl.toString(), 302);
     });
 
-    app.get('/favicon.ico', async (c) => {
-        if (!runtime.assetFetcher) {
-            return c.notFound();
-        }
-        try {
-            return await runtime.assetFetcher(c.req.raw);
-        } catch (error) {
-            runtime.logger.warn('Asset fetch failed', error);
-            return c.notFound();
-        }
+    app.get('/favicon.ico', (c) => {
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="6" fill="#f5820b"/><text x="16" y="23" text-anchor="middle" font-size="22" font-family="Arial,sans-serif" font-weight="bold" fill="#fff">S</text></svg>`;
+        return c.html(svg, 200, { 'Content-Type': 'image/svg+xml', 'Cache-Control': 'public, max-age=86400' });
     });
 
     return app;

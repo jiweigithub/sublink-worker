@@ -4,10 +4,6 @@ main = "src/worker.jsx"
 compatibility_date = "2025-03-01"
 compatibility_flags = ["nodejs_compat"]
 
-# Run `npm run setup-kv` to create the KV namespace and replace the placeholder ID.
 kv_namespaces = [
   { binding = "SUBLINK_KV", id = "YOUR_KV_NAMESPACE_ID" }
 ]
-
-[assets]
-directory = "./public"
