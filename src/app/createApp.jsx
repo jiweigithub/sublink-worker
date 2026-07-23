@@ -417,7 +417,7 @@ export function createApp(bindings = {}) {
         redirectUrl.pathname = path;
         redirectUrl.search = '';
         redirectUrl.searchParams.set('config', decodedUrl);
-        redirectUrl.searchParams.set('selectedRules', 'balanced');
+        redirectUrl.searchParams.set('selectedRules', 'comprehensive');
 
         return c.redirect(redirectUrl.toString(), 302);
     });
